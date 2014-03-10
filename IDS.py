@@ -70,21 +70,32 @@ def stripWhitspace(text):
 
 def checkBlockedUsers():
     blockedUsers = {}
+    lines = []
     with open("blockedIP.ini") as f:
         for line in f:
             temp = line.split(":")
             if time.time() - float(temp[0]) > (float(blockTLimit) * 3600):
                 unBlockUser(temp[1])
+            else:
+                lines.append(line)
+
+    with open("blockedIP.ini", "w") as f:
+        for line in lines:
+            f.write(line)
+        
     return
 
 def blockUser(user):
     print "Blocking " + user
-    os.system("")
+    f = open("blockedIP.ini", "a")
+    f.write(str(time.time()) + ":" + user + "\n")
+    f.close()
+    #os.system("")
     return
 
 def unBlockUser(user):
     print "Unblocking " + user
-    os.system("")
+    #os.system("")
     return
 
 def checkLogs():

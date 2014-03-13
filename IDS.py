@@ -279,7 +279,7 @@ def updateLastChecked():
         if not "lastChecked=" in line:
             print(line),
         else:
-            print("lastChecked=" + strftime("%Y-%m-%d %H:%M:%S")),
+            print("lastChecked=" + strftime("%Y-%m-%d %H:%M:")+"00")
 
 """
 /*------------------------------------------------------------------------------
@@ -303,13 +303,12 @@ def updateLastChecked():
 """
 def checkLogs():
     try: 
-
         for service in services:
             if fversion == 20:
                 if lastChecked == "null":
                     command = "journalctl _COMM=" + service + " --no-pager --no-tail"
                 else:
-                    command = "journalctl _COMM=" + service + " --no-pager --no-tail --since=\"" + lastChecked + "\""
+                    command = "journalctl _COMM=" + service + " --no-pager --no-tail --since=\"" + lastChecked.split(":")[0] + ":" + str(int(lastChecked.split(":")[1])-5) + ":00" + "\""
                 searchLogs(subprocess.check_output(command, shell=True), service)
             else:
                 command = "grep " + service + " /var/log/secure"

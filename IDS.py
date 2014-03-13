@@ -31,11 +31,13 @@ import subprocess
 import time
 import os
 import fileinput
+from time import strftime
 
 attemptLimit = 5 
 blockTLimit = 24
 services = {}
 fversion = 1
+lastChecked = ""
 
 """
 /*------------------------------------------------------------------------------
@@ -61,7 +63,7 @@ def main():
     services = readConfig()
     checkLogs()
     checkBlockedUsers()
-
+    updateLastChecked()
 
 """
 /*------------------------------------------------------------------------------
@@ -115,12 +117,16 @@ def checkLine(line):
     global blockTLimit
     global services
     global fversion
+    global lastChecked
 
     line = stripWhitspace(line)
 
     if line.startswith("attemptLimit"):
         temp = line.split("=")
         attemptLimit = (temp[1])
+    if line.startswith("lastChecked"):
+        temp = line.split("=")
+        lastChecked = (temp[1])
     elif line.startswith("blockTLimit"):
         temp = line.split("=")
         blockTLimit = (temp[1])
@@ -253,6 +259,31 @@ def unblockUser(user):
 """
 /*------------------------------------------------------------------------------
 --
+--  FUNCTION:   updateLastChecked
+--
+--  DATE:       March 12, 2014
+--
+--  DESIGNERS:  Jacob Miner  
+--
+--  PROGRAMMER: Jacob Miner 
+--
+--  INTERFACE: updateLastChecked()
+--
+--  RETURNS:  void
+--
+--  NOTES:  Sets the last checked time in the config file to the current time.
+------------------------------------------------------------------------------*/
+"""
+def updateLastChecked():
+    for line in fileinput.input("userConfig.ini", inplace=True):
+        if not "lastChecked=" in line:
+            print(line),
+        else:
+            print("lastChecked=" + strftime("%Y-%m-%d %H:%M:%S")),
+
+"""
+/*------------------------------------------------------------------------------
+--
 --  FUNCTION:   checkLogs
 --
 --  DATE:       March 12, 2014
@@ -271,13 +302,22 @@ def unblockUser(user):
 ------------------------------------------------------------------------------*/
 """
 def checkLogs():
-    for service in services:
-        if fversion == 20:
-            command = "journalctl _COMM=" + service + " --no-pager --no-tail"
-            searchLogs(subprocess.check_output(command, shell=True), service)
-        else:
-            command = "grep " + service + " /var/log/secure"
-            searchLogs(subprocess.check_output(command, shell=True), service)
+    try: 
+
+        for service in services:
+            if fversion == 20:
+                if lastChecked == "null":
+                    command = "journalctl _COMM=" + service + " --no-pager --no-tail"
+                else:
+                    command = "journalctl _COMM=" + service + " --no-pager --no-tail --since=\"" + lastChecked + "\""
+                searchLogs(subprocess.check_output(command, shell=True), service)
+            else:
+                command = "grep " + service + " /var/log/secure"
+                searchLogs(subprocess.check_output(command, shell=True), service)
+    except OSError:
+        return
+    except subprocess.CalledProcessError:
+        return
 
 """
 /*------------------------------------------------------------------------------

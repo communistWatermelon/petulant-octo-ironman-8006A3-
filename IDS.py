@@ -38,6 +38,8 @@ fversion = 1
 def main():
     services = readConfig()
     checkLogs()
+    checkBlockedUsers()
+
 
 def readConfig():
     with open("userConfig.ini") as f:
@@ -61,9 +63,6 @@ def checkLine(line):
     elif line.startswith("blockTLimit"):
         temp = line.split("=")
         blockTLimit = (temp[1])
-    elif line.startswith("lastChecked"):
-        temp = line.split("=")
-        lastChecked = (temp[1])
     elif line.startswith("_"):
         temp = line.split("_")
         temp = temp[1].split(":")
@@ -83,6 +82,7 @@ def checkBlockedUsers():
     lines = []
     with open("blockedIP.ini") as f:
         for line in f:
+            line = stripWhitspace(line)
             temp = line.split(":")
             if time.time() - float(temp[0]) > (float(blockTLimit) * 3600):
                 unBlockUser(temp[1])
@@ -92,24 +92,26 @@ def checkBlockedUsers():
     with open("blockedIP.ini", "w") as f:
         for line in lines:
             f.write(line)
-        
-    return
 
 def blockUser(user):
-    print "Blocking " + user
-    f = open("blockedIP.ini", "a")
-    f.write(str(time.time()) + ":" + user + "\n")
-    f.close()
-    os.system("iptables -A INPUT -s " + str(user) + " -j DROP")
-    return
+    if user in open('blockedIP.ini').read():
+        return
+    else: 
+        print "Blocking " + user
+        f = open("blockedIP.ini", "a")
+        f.write(str(time.time()) + ":" + user + "\n")
+        f.close()
+        os.system("iptables -A INPUT -s " + str(user) + " -j DROP")
 
 def unBlockUser(user):
+    if user == "127.0.0.1":
+        user = "localhost.localdomain"
+
     print "Unblocking " + user
+    os.system("iptables -D INPUT -s " + str(user) + " -j DROP")
     for line in fileinput.input("blockedIP.ini", inplace=True):
         if not user in line:
             print(line),
-    os.system("iptables -D INPUT -s " + str(user) + " -j DROP")
-    return
 
 def checkLogs():
     for service in services:
@@ -119,8 +121,6 @@ def checkLogs():
         else:
             command = "grep " + service + " /var/log/secure"
             searchLogs(subprocess.check_output(command, shell=True), service)
-
-    return
 
 def searchLogs(output, service):
     attempts = {}

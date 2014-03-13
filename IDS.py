@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 /*---------------------------------------------------------------------------------------
 --  SOURCE FILE:    IDS.py - The python IDS
@@ -36,8 +36,6 @@ attemptLimit = 5
 blockTLimit = 24
 services = {}
 fversion = 1
-blockedDir = "/home/jake/git/petulant-octo-ironman-8006A3-/"
-configDir = "/home/jake/git/petulant-octo-ironman-8006A3-/"
 
 """
 /*------------------------------------------------------------------------------
@@ -85,7 +83,7 @@ def main():
 ------------------------------------------------------------------------------*/
 """
 def readConfig():
-    with open(configDir + "userConfig.ini") as f:
+    with open("userConfig.ini") as f:
         for line in f:
             if line.startswith("#"):
                 continue
@@ -117,8 +115,6 @@ def checkLine(line):
     global blockTLimit
     global services
     global fversion
-    global blockedDir
-    global configDir
 
     line = stripWhitspace(line)
 
@@ -128,12 +124,6 @@ def checkLine(line):
     elif line.startswith("blockTLimit"):
         temp = line.split("=")
         blockTLimit = (temp[1])
-    elif line.startswith("configDir"):
-        temp = line.split("=")
-        configDir = (temp[1]) 
-    elif line.startswith("blockedDir"):
-        temp = line.split("=")
-        blockedDir = (temp[1])
     elif line.startswith("_"):
         temp = line.split("_")
         temp = temp[1].split(":")
@@ -189,7 +179,7 @@ def stripWhitspace(text):
 """
 def checkBlockedUsers():
     lines = []
-    with open(blockedDir+"blockedIP.ini") as f:
+    with open("blockedIP.ini") as f:
         for line in f:
             line = stripWhitspace(line)
             temp = line.split(":")
@@ -198,7 +188,7 @@ def checkBlockedUsers():
             else:
                 lines.append(line)
 
-    with open(blockedDir+"blockedIP.ini", "w") as f:
+    with open("blockedIP.ini", "w") as f:
         for line in lines:
             f.write(line)
 
@@ -222,11 +212,11 @@ def checkBlockedUsers():
 ------------------------------------------------------------------------------*/
 """
 def blockUser(user):
-    if user in open(blockedDir+'blockedIP.ini').read():
+    if user in open('blockedIP.ini').read():
         return
     else: 
         print "Blocking " + user
-        f = open(blockedDir+"blockedIP.ini", "a")
+        f = open("blockedIP.ini", "a")
         f.write(str(time.time()) + ":" + user + "\n")
         f.close()
         os.system("iptables -A INPUT -s " + str(user) + " -j DROP")
@@ -256,7 +246,7 @@ def unblockUser(user):
 
     print "Unblocking " + user
     os.system("iptables -D INPUT -s " + str(user) + " -j DROP")
-    for line in fileinput.input(blockedDir+"blockedIP.ini", inplace=True):
+    for line in fileinput.input("blockedIP.ini", inplace=True):
         if not user in line:
             print(line),
 
